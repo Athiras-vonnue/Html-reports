@@ -178,7 +178,7 @@
   </div>
 
   <div id="container"></div>
-  <h3>POS Events Table</h3>
+  <h3>POS Report Table</h3>
 
   <table id="sortableTable">
     <thead id="headers"></thead>
@@ -259,14 +259,14 @@
     }
 
     // generate graph for flagged transactions
-    const flaggedData = data.filter((item) => item.Flag === 'True');
+    const flaggedData = data.filter((item) => item.Flag === 'true');
 
     const flggedSeries = getEventSeries(
       flaggedData,
       'Location Name',
       'column'
     );
-    const flagData = flggedSeries.series
+    const flagData = flggedSeries.series.filter(({ name }) => name !== '');
 
     if (flagData.length === 0) {
       console.log(
@@ -280,10 +280,10 @@
         },
         title: {
           align: 'left',
-          text: 'Flagged transactions by location',
+          text: 'Flagged transactions',
         },
         xAxis: {
-          categories: flggedSeries.categories,
+          categories: posLocations,
           title: {
             text: 'POS Location',
           },
@@ -414,7 +414,7 @@
     const eventsCount = {};
 
     data.forEach((item) => {
-      const locationName = item[args] || 'Unset';
+      const locationName = item[args];
 
       // increment the count for the current location and eventsCount
       if (!eventsCount[locationName]) {
@@ -445,6 +445,42 @@
     return { series, categories };
   }
 
+  function getEventsByEmployees(data) {
+    const eventsCount = {};
+    const labels = [];
+    const employees = [];
+
+    data.forEach((item) => {
+      const locationName = item['Location Name'] || 'Unset';
+
+      if (labels.indexOf(locationName) === -1) {
+        labels.push(locationName);
+      }
+      const employeeName = item['Employee Name'];
+
+      if (!eventsCount[locationName]) {
+        eventsCount[locationName] = {};
+      }
+      if (!eventsCount[locationName][employeeName]) {
+        eventsCount[locationName][employeeName] = 1;
+      } else {
+        eventsCount[locationName][employeeName]++;
+      }
+
+      if (employees.indexOf(employeeName) === -1) {
+        employees.push(employeeName);
+      }
+    });
+
+    const series = employees.map((employee) => ({
+      showInLegend: false,
+      type: 'column',
+      name: employee,
+      data: labels.map((label) => eventsCount[label]?.[employee] || 0),
+    }));
+
+    return { series, labels };
+  }
 </script>
 
 </html>
